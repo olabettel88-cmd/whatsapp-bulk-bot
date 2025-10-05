@@ -137,7 +137,6 @@ const whatsappClient = new Client({
             '--disable-accelerated-2d-canvas',
             '--no-first-run',
             '--no-zygote',
-            '--single-process', // Critical for low memory
             '--disable-gpu',
             '--disable-software-rasterizer',
             '--disable-extensions',
@@ -146,15 +145,12 @@ const whatsappClient = new Client({
             '--disable-sync',
             '--metrics-recording-only',
             '--mute-audio',
+            '--no-first-run',
             '--safebrowsing-disable-auto-update',
             '--disable-crash-reporter',
-            '--disable-web-security',
-            '--disable-features=IsolateOrigins,site-per-process',
-            '--disable-blink-features=AutomationControlled',
-            '--js-flags=--max-old-space-size=512' // Limit memory usage
+            '--disable-web-security'
         ],
-        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium',
-        timeout: 60000 // Increase timeout to 60 seconds
+        executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium'
     }
 });
 
@@ -350,34 +346,6 @@ telegram.onText(/\/start/, async (msg) => {
                           `Type /help to see all available commands.`;
     
     telegram.sendMessage(chatId, welcomeMessage, { parse_mode: 'Markdown' });
-});
-
-telegram.onText(/\/debug/, async (msg) => {
-    const chatId = msg.chat.id;
-    
-    if (!isAuthorized(chatId)) {
-        return telegram.sendMessage(chatId, '🚫 Unauthorized access.');
-    }
-    
-    const debugInfo = `🔧 *Debug Information*\n\n` +
-                     `*Bot Status:*\n` +
-                     `- Health: ${healthStatus.status}\n` +
-                     `- WhatsApp: ${healthStatus.whatsapp}\n` +
-                     `- Uptime: ${Math.floor((Date.now() - healthStatus.startTime) / 1000 / 60)} min\n\n` +
-                     `*Configuration:*\n` +
-                     `- Port: ${PORT}\n` +
-                     `- Authorized Users: ${AUTHORIZED_USERS.join(', ') || 'None'}\n` +
-                     `- Node: ${process.version}\n` +
-                     `- Platform: ${process.platform}\n\n` +
-                     `*WhatsApp Client:*\n` +
-                     `- Ready: ${state.whatsappReady ? '✅' : '❌'}\n` +
-                     `- Puppeteer Path: ${process.env.PUPPETEER_EXECUTABLE_PATH || 'default'}\n\n` +
-                     `*State:*\n` +
-                     `- Contacts: ${state.contacts.length}\n` +
-                     `- Campaigns: ${state.campaigns.length}\n` +
-                     `- Current Campaign: ${state.currentCampaign ? 'Running' : 'None'}`;
-    
-    telegram.sendMessage(chatId, debugInfo, { parse_mode: 'Markdown' });
 });
 
 telegram.onText(/\/help/, async (msg) => {
@@ -844,12 +812,8 @@ telegram.onText(/\/campaigns/, async (msg) => {
 // Initialize
 async function initialize() {
     console.log('🚀 Initializing bot...');
-    console.log('='.repeat(50));
-    console.log(`📱 Telegram Token: ${TELEGRAM_TOKEN ? '✅ Set (length: ' + TELEGRAM_TOKEN.length + ')' : '❌ Missing'}`);
+    console.log(`📱 Telegram Token: ${TELEGRAM_TOKEN ? '✅ Set' : '❌ Missing'}`);
     console.log(`👥 Authorized Users: ${AUTHORIZED_USERS.length > 0 ? AUTHORIZED_USERS.join(', ') : '⚠️ None (open access)'}`);
-    console.log(`🖥️ Node version: ${process.version}`);
-    console.log(`📦 Platform: ${process.platform}`);
-    console.log('='.repeat(50));
     
     await loadState();
     
@@ -859,16 +823,7 @@ async function initialize() {
     });
     
     console.log('📱 Initializing WhatsApp client...');
-    console.log('Puppeteer executable path:', process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium');
-    
-    try {
-        whatsappClient.initialize();
-        console.log('✅ WhatsApp initialize() called successfully');
-        console.log('⏳ Waiting for QR code event...');
-    } catch (error) {
-        console.error('❌ FAILED to initialize WhatsApp client:', error);
-        console.error('Error stack:', error.stack);
-    }
+    whatsappClient.initialize();
     
     console.log('✅ Bot initialized! Waiting for WhatsApp connection...');
 }
