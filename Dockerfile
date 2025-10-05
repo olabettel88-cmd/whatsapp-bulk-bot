@@ -55,10 +55,11 @@ COPY . .
 
 # Create session directory with proper permissions
 RUN mkdir -p /app/whatsapp_session /tmp/.X11-unix && \
-    chmod -R 777 /app/whatsapp_session /tmp
+    chmod -R 777 /app/whatsapp_session /tmp && \
+    rm -rf /tmp/.org.chromium.Chromium.* || true
 
 # Expose port
 EXPOSE 3000
 
-# Start application
-CMD ["node", "server.js"]
+# Cleanup script before starting
+CMD rm -rf /tmp/.org.chromium.Chromium.* && node server.js
