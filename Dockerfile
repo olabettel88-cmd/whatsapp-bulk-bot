@@ -1,34 +1,46 @@
-FROM node:18-bullseye-slim
+FROM node:18-slim
 
-# Install Chromium and all dependencies
+# Install Chromium and ALL required dependencies
 RUN apt-get update && apt-get install -y \
     chromium \
-    chromium-driver \
+    chromium-sandbox \
+    fonts-liberation \
     fonts-ipafont-gothic \
     fonts-wqy-zenhei \
     fonts-thai-tlwg \
+    fonts-khmeros \
     fonts-kacst \
     fonts-freefont-ttf \
-    libxss1 \
-    libxtst6 \
-    libgconf-2-4 \
-    libnss3 \
-    libasound2 \
+    libatk1.0-0 \
     libatk-bridge2.0-0 \
-    libgtk-3-0 \
-    libx11-xcb1 \
-    libxcb-dri3-0 \
+    libcups2 \
     libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
     libgbm1 \
+    libpango-1.0-0 \
+    libcairo2 \
+    libasound2 \
+    libatspi2.0-0 \
+    libxshmfence1 \
+    libnss3 \
+    libnspr4 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcb-dri3-0 \
+    libxext6 \
     ca-certificates \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
-# Set environment for Puppeteer
+# Set Puppeteer environment variables
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
     PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    CHROME_BIN=/usr/bin/chromium \
-    DISPLAY=:99
+    CHROME_BIN=/usr/bin/chromium
 
 WORKDIR /app
 
@@ -36,21 +48,17 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production --force
+RUN npm ci --only=production --legacy-peer-deps || npm install --only=production --force
 
-# Copy application files
+# Copy application code
 COPY . .
 
-# Create directories
-RUN mkdir -p /app/whatsapp_session && \
-    chmod -R 777 /app/whatsapp_session
+# Create session directory with proper permissions
+RUN mkdir -p /app/whatsapp_session /tmp/.X11-unix && \
+    chmod -R 777 /app/whatsapp_session /tmp
 
 # Expose port
 EXPOSE 3000
-
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start application
 CMD ["node", "server.js"]
